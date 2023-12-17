@@ -1,0 +1,63 @@
+﻿using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
+using TechBlogCore.AOT.Entities;
+
+namespace TechBlogCore.AOT.Dtos
+{
+    public class ArticleCreateDto
+    {
+        [Required(ErrorMessage = "{0} 字段是必填的")]
+        [MaxLength(100, ErrorMessage = "{0} 的最大长度为 {1}。")]
+        public string Title { get; set; }
+        [Required(ErrorMessage = "{0} 字段是必填的")]
+        [MaxLength(16777215, ErrorMessage = "{0} 的最大长度为 {1}。")]
+        public string Content { get; set; }
+        [Required(ErrorMessage = "{0} 字段是必填的")]
+        [MaxLength(20, ErrorMessage = "{0} 的最大长度为 {1}。")]
+        public string Category { get; set; }
+        public State State { get; set; } = State.Active;
+        [Required(ErrorMessage = "{0} 字段是必填的")]
+        public IEnumerable<string> Tags { get; set; }
+    }
+
+    public class ArticleUpdateDto
+    {
+        [Required(ErrorMessage = "{0} 字段是必填的")]
+        [MaxLength(100, ErrorMessage = "{0} 的最大长度为 {1}。")]
+        public string Title { get; set; }
+        [Required(ErrorMessage = "{0} 字段是必填的")]
+        [MaxLength(16777215, ErrorMessage = "{0} 的最大长度为 {1}。")]
+        public string Content { get; set; }
+        [Required(ErrorMessage = "{0} 字段是必填的")]
+        [MaxLength(20, ErrorMessage = "{0} 的最大长度为 {1}。")]
+        public string Category { get; set; }
+        public State State { get; set; } = State.Modified;
+        [Required(ErrorMessage = "{0} 字段是必填的")]
+        public IEnumerable<string> Tags { get; set; }
+    }
+
+    public class ArticleDetailDto
+    {
+        public int Id { get; set; }
+        public string Title { get; set; }
+        public string Content { get; set; }
+        public string Category { get; set; }
+        public string State { get; set; }
+        public int ViewCount { get; set; }
+        public DateTime CreateTime { get; set; }
+        public DateTime ModifyTime { get; set; }
+        public IEnumerable<string> Tags { get; set; }
+        public IEnumerable<CommentDto> Comments { get; set; }
+    }
+
+    public class ArticleListDto
+    {
+        public int Id { get; set; }
+        public string Title { get; set; }
+        public string Content { get; set; }
+        public string Category { get; set; }
+        public int ViewCount { get; set; }
+        public int CommentCount { get; set; }
+        public DateTime CreateTime { get; set; }
+    }
+}

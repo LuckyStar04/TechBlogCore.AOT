@@ -21,11 +21,11 @@ namespace TechBlogCore.AOT.Services
                 conn.Open();
                 return await conn.QueryAsync<CategoryDto>($@"SELECT *
 FROM
-(SELECT t.Id
+(SELECT LOWER(HEX(t.Id)) AS Id
 , t.Name
 , (SELECT count(*)
     FROM blog_articles a
-    WHERE a.CategoryId = t.Id) Count
+    WHERE a.Category_Id = t.Id AND a.IsDeleted=0) Count
 FROM blog_categories t
 ) _t WHERE Count > 0 ORDER BY _t.Count DESC LIMIT {size}");
             }

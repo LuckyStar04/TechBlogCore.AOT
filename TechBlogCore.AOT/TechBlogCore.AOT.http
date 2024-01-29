@@ -9,3 +9,7 @@ GET {{TechBlogCore.AOT_HostAddress}}/api/articles/1
 Accept: application/json
 
 ###
+
+GET {{TechBlogCore.AOT_HostAddress}}/articles/
+
+###

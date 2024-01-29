@@ -1,6 +1,4 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using System.Text.Json.Serialization;
-using TechBlogCore.AOT.Entities;
 
 namespace TechBlogCore.AOT.Dtos
 {
@@ -15,7 +13,6 @@ namespace TechBlogCore.AOT.Dtos
         [Required(ErrorMessage = "{0} 字段是必填的")]
         [MaxLength(20, ErrorMessage = "{0} 的最大长度为 {1}。")]
         public string Category { get; set; }
-        public State State { get; set; } = State.Active;
         [Required(ErrorMessage = "{0} 字段是必填的")]
         public IEnumerable<string> Tags { get; set; }
     }
@@ -31,18 +28,16 @@ namespace TechBlogCore.AOT.Dtos
         [Required(ErrorMessage = "{0} 字段是必填的")]
         [MaxLength(20, ErrorMessage = "{0} 的最大长度为 {1}。")]
         public string Category { get; set; }
-        public State State { get; set; } = State.Modified;
         [Required(ErrorMessage = "{0} 字段是必填的")]
         public IEnumerable<string> Tags { get; set; }
     }
 
     public class ArticleDetailDto
     {
-        public int Id { get; set; }
+        public string Id { get; set; }
         public string Title { get; set; }
         public string Content { get; set; }
         public string Category { get; set; }
-        public string State { get; set; }
         public int ViewCount { get; set; }
         public DateTime CreateTime { get; set; }
         public DateTime ModifyTime { get; set; }
@@ -52,7 +47,7 @@ namespace TechBlogCore.AOT.Dtos
 
     public class ArticleListDto
     {
-        public int Id { get; set; }
+        public string Id { get; set; }
         public string Title { get; set; }
         public string Content { get; set; }
         public string Category { get; set; }

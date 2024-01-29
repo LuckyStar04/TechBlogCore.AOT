@@ -21,12 +21,12 @@ namespace TechBlogCore.AOT.Services
                 conn.Open();
                 return await conn.QueryAsync<TagDto>($@"SELECT *
 FROM
-(SELECT t.Id
+(SELECT LOWER(HEX(t.Id)) AS Id
 , t.Name
 , (SELECT count(*)
     FROM blog_articles a
-    JOIN blog_articletags at ON at.ArticleId = a.Id AND a.State<>0
-    WHERE at.TagId = t.Id) Count
+    JOIN blog_articletags at ON at.Article_Id = a.Id AND a.IsDeleted=0
+    WHERE at.Tag_Id = t.Id) Count
 FROM blog_tags t
 ) _t WHERE Count > 0 ORDER BY _t.Count DESC LIMIT {size}");
             }

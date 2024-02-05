@@ -1,13 +1,18 @@
 ﻿using Dapper;
+using IdGen;
 using Microsoft.AspNetCore.Components.Forms;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.IdentityModel.Tokens;
 using MySqlConnector;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
+using System.Security.Principal;
 using System.Text;
 using TechBlogCore.AOT.Dtos;
 using TechBlogCore.AOT.Helpers;
+using TechBlogCore.AOT.Providers;
 
 namespace TechBlogCore.AOT.Services
 {
@@ -15,13 +20,22 @@ namespace TechBlogCore.AOT.Services
     {
         private readonly MySqlConnection conn;
         private readonly IConfiguration configuration;
+        private readonly IMemoryCache cache;
+        private readonly IdGenerator idGen;
+        private readonly ICurrUserProvider currProvider;
 
         public AuthService(
             MySqlConnection conn,
-            IConfiguration configuration)
+            IConfiguration configuration,
+            IMemoryCache cache,
+            IdGen.IdGenerator idGen,
+            ICurrUserProvider currProvider)
         {
             this.conn = conn;
             this.configuration = configuration;
+            this.cache = cache;
+            this.idGen = idGen;
+            this.currProvider = currProvider;
         }
 
         const int keySize = 32, iterations = 350000;
@@ -29,56 +43,103 @@ namespace TechBlogCore.AOT.Services
         [DapperAot]
         public async Task<IResult> Login(LoginDto dto)
         {
-            const int maxAttempts = 5, lockMinutes = 15;
-            var user = await conn.QueryFirstOrDefaultAsync<UserPasswordVerifyDto>($"select Id,Account,Name,Email,Avatar_Id,IsDisabled,IsDeleted,IsAdmin,IsLock,LockRetry,LockExpire,Hash,Salt from Base_User where Account=@Username;", dto);
+            var user = await conn.QueryFirstOrDefaultAsync<UserPasswordVerifyDto>($"select Id,Account,Name,Email,Avatar_Id,IsDisabled,IsDeleted,IsAdmin,Hash,Salt from Base_User where Account=@Username;", dto);
             if (user == null)
             {
+                SetFailedCount(dto.Username);
                 return TypedResults.Unauthorized();
-            }
-            if (user.IsLock)
-            {
-                if (user.LockExpire > DateTime.UtcNow)
-                {
-                    throw new MessageException("密码错误次数过多，请稍后尝试");
-                }
-                else
-                {
-                    await conn.ExecuteAsync($"UPDATE Base_User SET IsLock=0,LockRetry=0,LockExpire=NULL WHERE Id={user.Id};");
-                }
             }
             //验证密码
             if (!VerifyPassword(dto.Password, user.Hash, user.Salt))
             {
-                user.LockRetry++;
-                if (user.LockRetry > maxAttempts)
-                {
-                    await conn.ExecuteAsync($"UPDATE Base_User SET IsLock=1,LockRetry=0,LockExpire='{DateTime.UtcNow.AddMinutes(lockMinutes):yyyy-MM-dd HH:mm:ss}' WHERE Id={user.Id};");
-                    throw new MessageException("密码错误次数过多，请稍后尝试");
-                }
-                else
-                {
-                    await conn.ExecuteAsync($"UPDATE Base_User SET LockRetry={user.LockRetry} WHERE Id={user.Id};");
-                    throw new MessageException("用户名或者密码错误");
-                }
+                SetFailedCount(dto.Username);
+                return TypedResults.Unauthorized();
             }
-            await conn.ExecuteAsync($"UPDATE Base_User SET IsLock=0,LockRetry=0,LockExpire=NULL WHERE Id={user.Id};");
-            var roles = (await conn.QueryAsync<string>(@$"SELECT a.Name
+            var roles = (await conn.QueryAsync<string>(@$"SELECT a.Encode
 FROM Base_Role a
 JOIN Base_UserRole b ON a.Id=b.Role_Id
 WHERE b.User_Id={user.Id} AND a.IsDeleted=0;")).AsList();
 
             return TypedResults.Ok(new ResponseDto<string>
             {
-                Data = GetToken(user.Account, user.Email, user.IsAdmin, roles)
+                Data = GetToken(user, roles)
             });
         }
 
-        public IResult GetStatus(ClaimsPrincipal User)
+        [DapperAot]
+        public async Task<IResult> Register(RegisterDto dto)
         {
-            var role = User.FindFirst(ClaimTypes.Role)?.Value;
-            var user = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            var email = User.FindFirst(ClaimTypes.Email)?.Value;
-            return TypedResults.Ok(new UserStatusDto { role = role, user = user, email = email });
+            var param = new DynamicParameters();
+            param.Add("@account", dto.Username);
+            param.Add("@email", dto.Email);
+            param.Add("@password", dto.Password);
+            var userExists = await conn.ExecuteScalarAsync<int>(@"SELECT 1 FROM Base_User WHERE Account=@account OR Email=@email;", param);
+            if (userExists == 1)
+            {
+                return TypedResults.BadRequest(new ResponseDto<string>
+                {
+                    Code = 1,
+                    Msg = "用户或者邮箱已存在，请尝试更换"
+                });
+            }
+            var hash = HashPasword(dto.Password, out var salt);
+            var user = new UserPasswordVerifyDto
+            {
+                Id = idGen.CreateId(),
+                Account = dto.Username,
+                Name = dto.Username,
+                Email = dto.Email,
+                Hash = hash,
+                Salt = salt,
+                IsDisabled = false,
+                IsAdmin = false,
+                IsDeleted = false,
+                Avatar_Id = 0,
+            };
+            var role_id = await conn.ExecuteScalarAsync<long?>(@"SELECT Id FROM Base_Role WHERE IsDefault=1;");
+            if (role_id > 0)
+            {
+                var userRole = new UserRoleDto
+                {
+                    User_Id = user.Id,
+                    Role_Id = role_id.Value,
+                };
+                await conn.ExecuteAsync("INSERT INTO Base_UserRole(User_Id,Role_Id) VALUES(@User_Id,@Role_Id);", userRole);
+            }
+            await conn.ExecuteAsync("INSERT INTO Base_User(Id,Account,Name,Email,Hash,Salt,IsDisabled,IsAdmin,IsDeleted,Avatar_Id) VALUES(@Id,@Account,@Name,@Email,@Hash,@Salt,@IsDisabled,@IsAdmin,@IsDeleted,@Avatar_Id);", user);
+            return TypedResults.Ok(new ResponseDto<string>
+            {
+                Msg = "注册成功。",
+            });
+        }
+
+        private void SetFailedCount(string username)
+        {
+            const int MaxFailedCount = 5;
+            const int ExpireMinutes = 15;
+            if (cache.TryGetValue($"LOGIN_FAILED_{username}", out int t))
+            {
+                if (t >= MaxFailedCount)
+                {
+                    throw new MessageException($"用户名或密码错误已达 {MaxFailedCount} 次，已经锁定。请 {ExpireMinutes} 分钟后再试");
+                }
+                else
+                {
+                    cache.Set($"LOGIN_FAILED_{username}", t + 1, TimeSpan.FromMinutes(ExpireMinutes));
+                    throw new MessageException($"用户名或密码错误");
+                }
+            }
+            else
+            {
+                cache.Set($"LOGIN_FAILED_{username}", 1, TimeSpan.FromMinutes(ExpireMinutes));
+                throw new MessageException($"用户名或密码错误");
+            }
+        }
+
+        public IResult GetStatus()
+        {
+            var curr = currProvider.GetCurrUser();
+            return TypedResults.Ok(new UserStatusDto { role = curr?.Roles.FirstOrDefault(), user = curr?.Account, name = curr?.Name, email = curr?.Email });
         }
 
         private bool VerifyPassword(string password, string hash, string saltStr)
@@ -103,18 +164,20 @@ WHERE b.User_Id={user.Id} AND a.IsDeleted=0;")).AsList();
             return Convert.ToHexString(hash);
         }
 
-        private string GetToken(string sub, string email, bool isAdmin, IEnumerable<string> roles)
+        private string GetToken(UserPasswordVerifyDto user, IEnumerable<string> roles)
         {
             var authSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["JWT:Secret"]));
             var claims = new List<Claim>
             {
-                new Claim(JwtRegisteredClaimNames.Sub, sub),
-                new Claim(ClaimTypes.Email, email),
+                new Claim(BlogClaimTypes.Id, user.Id.LongToHex()),
+                new Claim(BlogClaimTypes.Sub, user.Account),
+                new Claim(BlogClaimTypes.Name, user.Name),
+                new Claim(BlogClaimTypes.Email, user.Email),
             };
-            if (isAdmin)
-                claims.Add(new Claim(ClaimTypes.Role, "Admin"));
+            if (user.IsAdmin)
+                claims.Add(new Claim(BlogClaimTypes.Role, "Admin"));
             else
-                claims.AddRange(roles.Select(v => new Claim(ClaimTypes.Role, v)));
+                claims.AddRange(roles.Select(v => new Claim(BlogClaimTypes.Role, v)));
 
             var token = new JwtSecurityToken(
                 issuer: configuration["JWT:ValidIssuer"],
@@ -127,5 +190,14 @@ WHERE b.User_Id={user.Id} AND a.IsDeleted=0;")).AsList();
 
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
+    }
+
+    public static class BlogClaimTypes
+    {
+        public const string Role = "TechBlogCore.Role";
+        public const string Email = "TechBlogCore.Email";
+        public const string Name = "TechBlogCore.Name";
+        public const string Sub = "sub";
+        public const string Id = "TechBlogCore.Id";
     }
 }

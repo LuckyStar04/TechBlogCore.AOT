@@ -13,7 +13,7 @@
             return string.Join(separator, source);
         }
 
-        public static long HexToLong(this string id)
+        public static long HexToLong(this string? id)
         {
             return Convert.ToInt64(id.PadRight(16, '0'), 16);
         }

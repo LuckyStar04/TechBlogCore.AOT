@@ -89,9 +89,9 @@ WHERE a.Id = {id};
             var article = await conn.QueryFirstOrDefaultAsync<ArticleDetailDto>(sql);
             if (article == null) throw new MessageException("文章未找到");
             article.Tags = await conn.QueryAsync<string>($"SELECT a.Name FROM blog_tags a JOIN blog_articletags b ON b.Tag_Id = a.Id WHERE b.Article_Id = {id};");
-            var allComments = await conn.QueryAsync<CommentDto>($@"SELECT LOWER(HEX(c.Id)) AS Id
-, LOWER(HEX(c.Parent_Id)) AS Parent_Id
-, LOWER(HEX(c.Article_Id)) AS Article_Id
+            var allComments = await conn.QueryAsync<CommentDto>($@"SELECT LOWER(TRIM(TRAILING '0' FROM HEX(c.Id))) AS Id
+, LOWER(TRIM(TRAILING '0' FROM HEX(c.Parent_Id))) AS ParentId
+, LOWER(TRIM(TRAILING '0' FROM HEX(c.Article_Id))) AS ArticleId
 , u.Name UserName
 , u.Email
 , r.Name Role
@@ -104,10 +104,10 @@ JOIN base_user u ON u.Id = c.User_Id AND c.IsDeleted=0 AND u.IsDeleted=0
 JOIN base_userrole ur ON u.Id=ur.User_Id
 JOIN base_role r ON ur.Role_Id=r.Id AND r.IsDeleted=0
 WHERE c.Article_Id = {id}");
-            article.Comments = allComments.Where(v => v.Parent_Id == null).ToList();
+            article.Comments = allComments.Where(v => v.ParentId == null).ToList();
             foreach (var comment in article.Comments)
             {
-                comment.Children = allComments.Where(v => v.Parent_Id == v.Id).ToList();
+                comment.Children = allComments.Where(v => v.ParentId == comment.Id).ToList();
             }
             return article;
         }

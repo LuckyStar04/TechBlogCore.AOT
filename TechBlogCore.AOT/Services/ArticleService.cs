@@ -119,8 +119,8 @@ WHERE c.Article_Id = {id}");
             var sql = new StringBuilder();
             var param = new DynamicParameters();
 
-            var existTags = await conn.QueryAsync<string>("SELECT TKey FROM Blog_Tags;");
-            var newTags = createDto.Tags.Where(v => !existTags.Contains(v.ToLower())).ToList();
+            var allTags = await conn.QueryAsync<TagModel>("SELECT Id,TKey,Name FROM Blog_Tags WHERE IsDeleted=0;");
+            var newTags = createDto.Tags.Where(v => !allTags.Any(t => t.TKey == v.ToLower())).ToList();
             var i = 0;
             for (; i < newTags.Count; i++)
             {
@@ -130,6 +130,14 @@ INSERT INTO Blog_ArticleTags(Article_Id,Tag_Id) VALUES(@Article_Id,@Id_{i});");
                 param.Add($"@Id_{i}", idGen.CreateId());
                 param.Add($"@TKey_{i}", tag.ToLower());
                 param.Add($"@Name_{i}", tag);
+            }
+            var oldTags = allTags.Where(v => createDto.Tags.Any(t => t.ToLower() == v.TKey)).ToList();
+            for (var j = 0; j < oldTags.Count; j++)
+            {
+                var tag = oldTags[j];
+                sql.Append($@"INSERT INTO Blog_ArticleTags(Article_Id,Tag_Id) VALUES(@Article_Id,@Id_{i});");
+                param.Add($"@Id_{i}", tag.Id);
+                i++;
             }
             var existCategoryId = await conn.QueryFirstOrDefaultAsync<long?>("SELECT Id FROM Blog_Categories WHERE Name=@Category;", new { createDto.Category });
             if (existCategoryId == null)
@@ -145,7 +153,8 @@ INSERT INTO Blog_ArticleTags(Article_Id,Tag_Id) VALUES(@Article_Id,@Id_{i});");
             param.Add("@Title", createDto.Title);
             param.Add("@Content", createDto.Content);
             param.Add("@Category_Id", existCategoryId);
-
+            var p = param.ParameterNames.Select(v => $"{v}: {param.Get<dynamic>(v).ToString()}").Join(';');
+            var q = sql.ToString();
             await conn.ExecuteAsync(sql.ToString(), param);
             return await GetArticle(article_Id.LongToHex());
         }

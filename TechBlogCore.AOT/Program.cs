@@ -29,6 +29,7 @@ builder.Services.AddScoped<TagService, TagService>();
 builder.Services.AddScoped<CategoryService, CategoryService>();
 builder.Services.AddScoped<AuthService, AuthService>();
 builder.Services.AddScoped<CommentService, CommentService>();
+builder.Services.AddScoped<FileService, FileService>();
 builder.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
 builder.Services.AddScoped<ICurrUserProvider, CurrUserProvider>();
 builder.Services.AddSingleton<IdGen.IdGenerator, IdGen.IdGenerator>((_) => new IdGen.IdGenerator(1000));
@@ -114,7 +115,7 @@ auth.MapPost("register", (AuthService service, RegisterDto dto)
 #endregion
 
 #region ÆÀÂÛ
-var comment = app.MapGroup("api/articles/{articleId}/comments");
+var comment = app.MapGroup("/api/articles/{articleId}/comments");
 comment.MapGet("/", (string articleId, string? parentId, int PageSize, int PageNumber, CommentService service)
     => service.GetComments(articleId, parentId, PageNumber, PageSize)).WithName("GetCommentById");
 comment.MapGet("{commentId}", (string articleId, string commentId, CommentService service)
@@ -125,6 +126,13 @@ comment.MapPut("{commentId}", (string articleId, string commentId, CommentModify
     => service.ModifyComment(articleId, commentId, dto)).RequireAuthorization("NeedLogin");
 #endregion
 
+#region ¸½¼þ
+var file = app.MapGroup("/api/file");
+file.MapGet("{name}", (string name, FileService service)
+    => service.GetFile(name));
+file.MapPost("/", (FileService service, HttpRequest req)
+    => service.UploadFile(req)).RequireAuthorization("AdminOnly");
+#endregion
 app.Run();
 
 

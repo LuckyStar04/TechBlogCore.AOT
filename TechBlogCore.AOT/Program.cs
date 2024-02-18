@@ -61,6 +61,8 @@ builder.Logging.AddConsole();
 builder.Services.AddMemoryCache();
 
 var app = builder.Build();
+app.UseDefaultFiles();
+app.UseStaticFiles();
 app.UseAuthentication();
 app.UseAuthorization();
 var logger = app.Services.GetRequiredService<ILogger<Program>>();

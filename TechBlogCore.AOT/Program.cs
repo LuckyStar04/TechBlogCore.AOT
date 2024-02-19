@@ -22,8 +22,11 @@ builder.Services.ConfigureHttpJsonOptions(options =>
     //options.SerializerOptions.TypeInfoResolver = JsonTypeInfoResolver.Combine();
 });
 
+var connStr = configuration.GetConnectionString("DefaultConnection");
+if (string.IsNullOrEmpty(connStr))
+    throw new ArgumentNullException("ERR: Database connect string CANNOT be NULL!");
 builder.Services.AddTransient(_ =>
-    new MySqlConnection(builder.Configuration.GetConnectionString("DefaultConnection")));
+    new MySqlConnection(connStr));
 builder.Services.AddScoped<ArticleService, ArticleService>();
 builder.Services.AddScoped<TagService, TagService>();
 builder.Services.AddScoped<CategoryService, CategoryService>();
@@ -61,8 +64,8 @@ builder.Logging.AddConsole();
 builder.Services.AddMemoryCache();
 
 var app = builder.Build();
-app.UseDefaultFiles();
-app.UseStaticFiles();
+//app.UseDefaultFiles();
+//app.UseStaticFiles();
 app.UseAuthentication();
 app.UseAuthorization();
 var logger = app.Services.GetRequiredService<ILogger<Program>>();

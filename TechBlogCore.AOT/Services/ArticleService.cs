@@ -117,12 +117,12 @@ WHERE c.Article_Id = {id}");
         [DapperAot]
         public async Task<ArticleDetailDto> CreateArticle(ArticleCreateDto createDto)
         {
-            logger.LogDebug("CreateDto: \ncategory - {0}\ncontent - {1}\nstate - {2}\n tags - {3}\ntitle - {4}",
-                createDto.Category,
-                createDto.Content,
-                "",
-                string.Join(",", createDto.Tags),
-                createDto.Title);
+            //logger.LogError("CreateDto: \ncategory - {0}\ncontent - {1}\nstate - {2}\n tags - {3}\ntitle - {4}",
+            //    createDto.Category,
+            //    createDto.Content,
+            //    "",
+            //    string.Join(",", createDto.Tags),
+            //    createDto.Title);
             var article_Id = idGen.CreateId();
             var sql = new StringBuilder();
             var param = new DynamicParameters();
@@ -161,9 +161,9 @@ INSERT INTO Blog_ArticleTags(Article_Id,Tag_Id) VALUES(@Article_Id,@Id_{i});");
             param.Add("@Title", createDto.Title);
             param.Add("@Content", createDto.Content);
             param.Add("@Category_Id", existCategoryId);
-            var p = param.ParameterNames.Select(v => $"{v}: {param.Get<dynamic>(v).ToString()}").Join(';');
+            //var p = param.ParameterNames.Select(v => $"{v}: {param.Get<dynamic>(v).ToString()}").Join(';');
             var q = sql.ToString();
-            logger.LogDebug("Sql: {0}\nParam: {1}", q, p);
+            //logger.LogDebug("Sql: {0}\nParam: {1}", q, p);
             await conn.ExecuteAsync(q, param);
             return await GetArticle(article_Id.LongToHex());
         }

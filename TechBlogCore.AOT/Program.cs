@@ -1,9 +1,6 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.IdentityModel.Tokens;
 using MySqlConnector;
-using System.Security.Claims;
 using System.Text;
 using System.Text.Json.Serialization;
 using TechBlogCore.AOT.DtoParams;
@@ -89,8 +86,12 @@ articles.MapGet("/", async (string? Category, string? Tag, string? Keyword, Arti
     return articles;
 });
 
-articles.MapGet("{id}", (string id, ArticleService articleService)
-    => articleService.GetArticle(id)).WithName("GetArticleById");
+articles.MapGet("{id}", async (string id, ArticleService articleService)
+    =>
+{
+    await articleService.AddViewsCount(id);
+    return await articleService.GetArticle(id);
+}).WithName("GetArticleById");
 articles.MapPost("/", async (ArticleCreateDto createDto, ArticleService articleService) =>
 {
     var entity = await articleService.CreateArticle(createDto);

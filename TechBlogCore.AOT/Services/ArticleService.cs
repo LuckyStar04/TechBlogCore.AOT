@@ -115,6 +115,13 @@ WHERE c.Article_Id = {id}");
         }
 
         [DapperAot]
+        public async Task AddViewsCount(string hexId)
+        {
+            var id = hexId.HexToLong();
+            await conn.ExecuteAsync($"update blog_articles set ViewsCount = ViewsCount + 1 where Id = {id};");
+        }
+
+        [DapperAot]
         public async Task<ArticleDetailDto> CreateArticle(ArticleCreateDto createDto)
         {
             //logger.LogError("CreateDto: \ncategory - {0}\ncontent - {1}\nstate - {2}\n tags - {3}\ntitle - {4}",

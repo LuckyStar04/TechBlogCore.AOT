@@ -30,6 +30,7 @@ namespace TechBlogCore.AOT.Providers
                 Email = user.FindFirstValue(BlogClaimTypes.Email),
                 Name = user.FindFirstValue(BlogClaimTypes.Name),
                 Roles = user.Claims.Where(v => v.Type == BlogClaimTypes.Role).Select(v => v.Value).ToArray(),
+                IsAdmin = user.Claims.Any(v => v.Type == BlogClaimTypes.Role && v.Value == "Admin"),
             };
         }
     }

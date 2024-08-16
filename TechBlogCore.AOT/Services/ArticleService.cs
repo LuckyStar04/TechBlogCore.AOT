@@ -5,6 +5,7 @@ using System.Text;
 using TechBlogCore.AOT.DtoParams;
 using TechBlogCore.AOT.Dtos;
 using TechBlogCore.AOT.Helpers;
+using TechBlogCore.AOT.Providers;
 using TechBlogCore.RestApi.Helpers;
 
 namespace TechBlogCore.AOT.Services
@@ -14,12 +15,14 @@ namespace TechBlogCore.AOT.Services
         private readonly MySqlConnection conn;
         private readonly IdGenerator idGen;
         private readonly ILogger<ArticleService> logger;
+        private readonly ICurrUserProvider currProvider;
 
-        public ArticleService(MySqlConnection conn, IdGenerator idGen, ILogger<ArticleService> logger)
+        public ArticleService(MySqlConnection conn, IdGenerator idGen, ILogger<ArticleService> logger, ICurrUserProvider currProvider)
         {
             this.conn = conn;
             this.idGen = idGen;
             this.logger = logger;
+            this.currProvider = currProvider;
         }
 
         [DapperAot]
@@ -117,6 +120,8 @@ WHERE c.Article_Id = {id}");
         [DapperAot]
         public async Task AddViewsCount(string hexId)
         {
+            var curr = currProvider.GetCurrUser();
+            if (curr != null && curr.IsAdmin) return;
             var id = hexId.HexToLong();
             await conn.ExecuteAsync($"update blog_articles set ViewsCount = ViewsCount + 1 where Id = {id};");
         }

@@ -4,7 +4,7 @@
 
 ## Introduction
 
-A blog back-end based on ASP.NET Core 8 Minimal API + Dapper.AOT + MariaDB + JWT Authorization
+A blog back-end based on ASP.NET Core 9 Minimal API + Dapper.AOT + MariaDB + JWT Authorization
 
 If you want a preview please visit [here](https://techblogcore.top/)
 

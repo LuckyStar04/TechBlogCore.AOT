@@ -10,10 +10,14 @@ If you want a preview please visit [here](https://techblogcore.top/)
 
 ## Try build it using Docker-Compose
 
-```
+#### 1. clone both frontend and backend projects from github
+```sh
 git clone https://github.com/LuckyStar04/TechBlogCore.AOT.git
 git clone https://github.com/LuckyStar04/TechBlogCore.Vue.git
+```
 
+#### 2. run it by docker compose
+```
 cd TechBlogCore.AOT
 docker compose up
 ```

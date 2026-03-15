@@ -4,7 +4,16 @@
 
 ## Introduction
 
-A blog back-end based on ASP.NET Core 9 Minimal API + Dapper.AOT + MariaDB + JWT Authorization
+A blog back-end based on ASP.NET Core 9 Minimal API + Dapper.AOT + MySQL + JWT Authorization
 
 If you want a preview please visit [here](https://techblogcore.top/)
 
+## Try build it using Docker-Compose
+
+```
+git clone https://github.com/LuckyStar04/TechBlogCore.AOT.git
+git clone https://github.com/LuckyStar04/TechBlogCore.Vue.git
+
+cd TechBlogCore.AOT
+docker compose up
+```

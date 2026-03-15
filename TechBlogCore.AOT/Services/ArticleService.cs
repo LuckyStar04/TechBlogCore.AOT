@@ -39,7 +39,7 @@ namespace TechBlogCore.AOT.Services
             }
             if (!param.Tag.IsNullOrWhiteSpace())
             {
-                cond += " AND a.Id in (SELECT Article_Id FROM blog_articletags a JOIN blog_tags b ON a.Tag_Id=b.Id WHERE b.Name = @Tag)";
+                cond += " AND a.Id in (SELECT Article_Id FROM Blog_ArticleTags a JOIN blog_tags b ON a.Tag_Id=b.Id WHERE b.Name = @Tag)";
             }
             if (!param.Keyword.IsNullOrWhiteSpace())
             {
@@ -56,15 +56,15 @@ SUBSTRING(Content, 1, 260)
 END) Content
 , b.Name Category
 , ViewsCount ViewCount
-,(SELECT count(*) FROM blog_comments c WHERE c.Article_Id=a.Id AND c.IsDeleted = 0) CommentCount
+,(SELECT count(*) FROM Blog_Comments c WHERE c.Article_Id=a.Id AND c.IsDeleted = 0) CommentCount
 , a.CreateTime
 FROM Blog_Articles a
-JOIN blog_categories b ON b.Id = a.Category_Id
+JOIN Blog_Categories b ON b.Id = a.Category_Id
 WHERE 1=1 {cond}
 ORDER BY a.CreateTime desc LIMIT {(param.PageNumber-1)*param.PageSize}, {param.PageSize}";
             var count_sql = $@"SELECT count(*)
 FROM Blog_Articles a
-JOIN blog_categories b ON b.Id = a.Category_Id
+JOIN Blog_Categories b ON b.Id = a.Category_Id
 WHERE 1=1 {cond}";
 
             return new PagedList<ArticleListDto>
@@ -88,12 +88,12 @@ WHERE 1=1 {cond}";
 , a.CreateTime
 , a.ModifyTime
 FROM Blog_Articles a
-JOIN blog_categories b ON b.Id = a.Category_Id
+JOIN Blog_Categories b ON b.Id = a.Category_Id
 WHERE a.Id = {id};
 ";
             var article = await conn.QueryFirstOrDefaultAsync<ArticleDetailDto>(sql);
             if (article == null) throw new MessageException("文章未找到");
-            article.Tags = await conn.QueryAsync<string>($"SELECT a.Name FROM blog_tags a JOIN blog_articletags b ON b.Tag_Id = a.Id WHERE b.Article_Id = {id};");
+            article.Tags = await conn.QueryAsync<string>($"SELECT a.Name FROM Blog_Tags a JOIN Blog_ArticleTags b ON b.Tag_Id = a.Id WHERE b.Article_Id = {id};");
             var allComments = await conn.QueryAsync<CommentDto>($@"SELECT LOWER(TRIM(TRAILING '0' FROM HEX(c.Id))) AS Id
 , LOWER(TRIM(TRAILING '0' FROM HEX(c.Parent_Id))) AS ParentId
 , LOWER(TRIM(TRAILING '0' FROM HEX(c.Article_Id))) AS ArticleId
@@ -104,10 +104,10 @@ WHERE a.Id = {id};
 , c.ReplyTo
 , c.CommentTime
 , c.ModifyTime
-FROM blog_comments c
-JOIN base_user u ON u.Id = c.User_Id AND c.IsDeleted=0 AND u.IsDeleted=0
-JOIN base_userrole ur ON u.Id=ur.User_Id
-JOIN base_role r ON ur.Role_Id=r.Id AND r.IsDeleted=0
+FROM Blog_Comments c
+JOIN Base_User u ON u.Id = c.User_Id AND c.IsDeleted=0 AND u.IsDeleted=0
+JOIN Base_UserRole ur ON u.Id=ur.User_Id
+JOIN Base_Role r ON ur.Role_Id=r.Id AND r.IsDeleted=0
 WHERE c.Article_Id = {id}");
             article.Comments = allComments.Where(v => v.ParentId == null).ToList();
             foreach (var comment in article.Comments)
@@ -123,7 +123,7 @@ WHERE c.Article_Id = {id}");
             var curr = currProvider.GetCurrUser();
             if (curr != null && curr.IsAdmin) return;
             var id = hexId.HexToLong();
-            await conn.ExecuteAsync($"update blog_articles set ViewsCount = ViewsCount + 1 where Id = {id};");
+            await conn.ExecuteAsync($"update Blog_Articles set ViewsCount = ViewsCount + 1 where Id = {id};");
         }
 
         [DapperAot]

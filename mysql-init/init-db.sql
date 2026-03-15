@@ -1,7 +1,9 @@
-CREATE DATABASE techblog2 DEFAULT CHARSET utf8mb4;
+CREATE DATABASE IF NOT EXISTS techblog2
+DEFAULT CHARACTER SET utf8mb4
+DEFAULT COLLATE utf8mb4_unicode_ci;
 USE techblog2;
 
-CREATE TABLE techblog2.base_resource
+CREATE TABLE techblog2.Base_Resource
 	(
 	  Id          BIGINT UNSIGNED NOT NULL
 	, IsDeleted   TINYINT NOT NULL DEFAULT 0
@@ -15,7 +17,7 @@ CREATE TABLE techblog2.base_resource
 	, PRIMARY KEY (Id)
 	) ENGINE=InnoDB DEFAULT CHARACTER SET=utf8mb4;
 
-CREATE TABLE techblog2.base_role
+CREATE TABLE techblog2.Base_Role
 	(
 	  Id        BIGINT UNSIGNED NOT NULL
 	, IsDeleted TINYINT NOT NULL DEFAULT 0
@@ -25,14 +27,14 @@ CREATE TABLE techblog2.base_role
 	, PRIMARY KEY (Id)
 	) ENGINE=InnoDB DEFAULT CHARACTER SET=utf8mb4;
 
-CREATE TABLE techblog2.base_userrole
+CREATE TABLE techblog2.Base_UserRole
 	(
 	  User_Id BIGINT UNSIGNED NOT NULL
 	, Role_Id BIGINT UNSIGNED NOT NULL
 	, PRIMARY KEY (User_Id, Role_Id)
 	) ENGINE=InnoDB DEFAULT CHARACTER SET=utf8mb4;
 
-CREATE TABLE techblog2.blog_articles
+CREATE TABLE techblog2.Blog_Articles
 	(
 	  Id          BIGINT UNSIGNED NOT NULL
 	, IsDeleted   TINYINT NOT NULL DEFAULT 0
@@ -46,7 +48,7 @@ CREATE TABLE techblog2.blog_articles
 	, KEY IX_Blog_Articles_Category_Id (Category_Id)
 	) ENGINE=InnoDB DEFAULT CHARACTER SET=utf8mb4;
 
-CREATE TABLE techblog2.blog_articletags
+CREATE TABLE techblog2.Blog_ArticleTags
 	(
 	  Article_Id BIGINT UNSIGNED NOT NULL
 	, Tag_Id     BIGINT UNSIGNED NOT NULL
@@ -54,7 +56,7 @@ CREATE TABLE techblog2.blog_articletags
 	, KEY IX_Blog_ArticleTags_Tag_Id (Tag_Id)
 	) ENGINE=InnoDB DEFAULT CHARACTER SET=utf8mb4;
 
-CREATE TABLE techblog2.blog_categories
+CREATE TABLE techblog2.Blog_Categories
 	(
 	  Id         BIGINT UNSIGNED NOT NULL
 	, IsDeleted  TINYINT NOT NULL DEFAULT 0
@@ -64,7 +66,7 @@ CREATE TABLE techblog2.blog_categories
 	, KEY IX_Blog_Categories_Name (Name)
 	) ENGINE=InnoDB DEFAULT CHARACTER SET=utf8mb4;
 
-CREATE TABLE techblog2.blog_comments
+CREATE TABLE techblog2.Blog_Comments
 	(
 	  Id          BIGINT UNSIGNED NOT NULL
 	, IsDeleted   TINYINT NOT NULL DEFAULT 0
@@ -81,7 +83,7 @@ CREATE TABLE techblog2.blog_comments
 	, KEY IX_Blog_Comments_Parent_Id (Parent_Id)
 	) ENGINE=InnoDB DEFAULT CHARACTER SET=utf8mb4;
 
-CREATE TABLE techblog2.blog_tags
+CREATE TABLE techblog2.Blog_Tags
 	(
 	  Id        BIGINT UNSIGNED NOT NULL
 	, IsDeleted TINYINT NOT NULL DEFAULT 0
@@ -91,7 +93,7 @@ CREATE TABLE techblog2.blog_tags
 	, KEY IX_Blog_Tags_TKey (TKey)
 	) ENGINE=InnoDB DEFAULT CHARACTER SET=utf8mb4;
 
-CREATE TABLE techblog2.base_user
+CREATE TABLE techblog2.Base_User
     (
       Id         BIGINT UNSIGNED NOT NULL
 	, IsDeleted  TINYINT(1) NOT NULL DEFAULT 0
@@ -103,4 +105,13 @@ CREATE TABLE techblog2.base_user
     , Avatar_Id  BIGINT UNSIGNED NOT NULL
 	, IsDisabled TINYINT(1) NOT NULL DEFAULT 0
 	, IsAdmin    TINYINT(1) NOT NULL DEFAULT 0
+	, PRIMARY KEY (Id)
     ) ENGINE=InnoDB DEFAULT CHARACTER SET=utf8mb4;
+
+INSERT INTO techblog2.Base_Role(Id,IsDeleted,Encode,Name,IsDefault)
+VALUES(1202280255822135296,0,'CommonUser','用户',1);
+
+INSERT INTO techblog2.Base_User(Id,IsDeleted,Account,Name,Hash,Salt,Email,Avatar_Id,IsDisabled,IsAdmin)
+VALUES(1202286957502038016,0,'admin','admin','B708239C2AE0B760658E1ED11DEF8CCA27B61984F75AEE1E46D032DFC6F61F98','CE64836842FA669ADD6003C8D60B2284E4A9F89FA4100B3609F46E3CB95D8075','test1@163.com',0,0,1);
+
+INSERT INTO techblog2.Base_UserRole(User_Id,Role_Id) VALUES(1202286957502038016,1202280255822135296);

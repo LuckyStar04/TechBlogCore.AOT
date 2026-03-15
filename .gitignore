@@ -11,3 +11,6 @@
 /TechBlogCore.AOT/Properties/PublishProfiles
 /TechBlogCore.AOT/TechBlogCore.AOT.csproj.user
 /TechBlogCore.AOT/bin/Debug/net9.0
+/bin/Debug
+/obj
+/TechBlogCore.AOT/bin/Debug/net10.0

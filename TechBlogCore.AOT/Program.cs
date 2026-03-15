@@ -68,6 +68,7 @@ app.UseAuthorization();
 var logger = app.Services.GetRequiredService<ILogger<Program>>();
 app.ConfigureExceptionHandler(logger);
 
+app.MapGet("/", () => "API is running");
 #region ндубоЙгИ
 var articles = app.MapGroup("/api/articles");
 

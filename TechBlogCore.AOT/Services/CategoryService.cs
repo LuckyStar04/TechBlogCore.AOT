@@ -24,9 +24,9 @@ FROM
 (SELECT LOWER(HEX(t.Id)) AS Id
 , t.Name
 , (SELECT count(*)
-    FROM blog_articles a
+    FROM Blog_Articles a
     WHERE a.Category_Id = t.Id AND a.IsDeleted=0) Count
-FROM blog_categories t
+FROM Blog_Categories t
 ) _t WHERE Count > 0 ORDER BY _t.Count DESC LIMIT {size}");
             }
         }
